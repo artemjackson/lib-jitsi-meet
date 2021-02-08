@@ -1,5 +1,7 @@
 /* global $, JitsiMeetJS */
 
+import { createBlurEffect } from "./blur/index.js"
+
 const options = {
     hosts: {
         domain: 'jitsi-meet.example.com',
@@ -26,7 +28,7 @@ const remoteTracks = {};
  * Handles local tracks.
  * @param tracks Array with JitsiTrack objects
  */
-function onLocalTracks(tracks) {
+async function onLocalTracks(tracks) {
     localTracks = tracks;
     for (let i = 0; i < localTracks.length; i++) {
         localTracks[i].addEventListener(
@@ -45,6 +47,11 @@ function onLocalTracks(tracks) {
                     `track audio output device was changed to ${deviceId}`));
         if (localTracks[i].getType() === 'video') {
             $('body').append(`<video autoplay='1' id='localVideo${i}' />`);
+            /*
+                Uncomment the line below to make sure that the blur effect is working.
+                Comment out the line and try to apply the blur effect via the link click to see the issue.
+            */
+            // await blurVideo();
             localTracks[i].attach($(`#localVideo${i}`)[0]);
         } else {
             $('body').append(
@@ -186,10 +193,18 @@ function disconnect() {
         disconnect);
 }
 
+globalThis.blurVideo = async function blurVideo() {
+    const blur = await createBlurEffect()
+
+    for (const track of localTracks)
+        if (track.getType() === 'video')
+            track.setEffect(blur)           
+}
+
 /**
  *
  */
-function unload() {
+globalThis.unload = function unload() {
     for (let i = 0; i < localTracks.length; i++) {
         localTracks[i].dispose();
     }
@@ -202,7 +217,7 @@ let isVideo = true;
 /**
  *
  */
-function switchVideo() { // eslint-disable-line no-unused-vars
+globalThis.switchVideo = function switchVideo() { // eslint-disable-line no-unused-vars
     isVideo = !isVideo;
     if (localTracks[1]) {
         localTracks[1].dispose();
@@ -229,7 +244,7 @@ function switchVideo() { // eslint-disable-line no-unused-vars
  *
  * @param selected
  */
-function changeAudioOutput(selected) { // eslint-disable-line no-unused-vars
+globalThis.changeAudioOutput = function changeAudioOutput(selected) { // eslint-disable-line no-unused-vars
     JitsiMeetJS.mediaDevices.setAudioOutputDevice(selected.value);
 }
 
